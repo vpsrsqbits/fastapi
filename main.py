@@ -1,8 +1,8 @@
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Literal
 from fastapi import Depends, FastAPI, Query, Path
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI()
 
@@ -44,7 +44,7 @@ async def get_user_me(current_user: Annotated[User, Depends(get_current_user)]):
     return current_user
 
 
-@app.get("/item/")
+# @app.get("/item/")
 async def read_item(token: Annotated[str, Depends(oauth2_scheme)]):
     return {"token":token}
 
@@ -138,7 +138,7 @@ async def read_items(
 
 # Path parameters and numeric validations
 
-@app.get("/items/{item_id}")
+# @app.get("/items/{item_id}")
 async def validate_numeric_item(
     item_id: Annotated[int, Path(ge=10,le=20)],
     q: str
@@ -149,6 +149,20 @@ async def validate_numeric_item(
     
     return result
 
+
+
+# Query parameters with a pydantic model
+
+class FilterParams(BaseModel):
+    model_config = {"extra":"forbid"}
+    limit:    int = Field(10, gt=0, le=100)
+    offset:   int = Field(0, ge=0)
+    order_by: Literal['created_at','updated_at'] = 'created_at'
+    tags:     list[str] = []
+
+@app.get("/items/")
+async def read_items_from_pydantic_model(filter_query: Annotated[FilterParams, Query()]):
+    return filter_query
 
 
 
